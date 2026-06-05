@@ -22,6 +22,9 @@ function build() {
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true }
   })
   win.setAlwaysOnTop(true, 'screen-saver')
+  // Click-through: clicks pass to the app underneath the bar; forwarded mouse
+  // moves still let the renderer detect hover (so the detail panel opens).
+  if (cfg.clickThrough !== false) win.setIgnoreMouseEvents(true, { forward: true })
   win.loadFile(join(__dirname, '..', 'renderer', 'index.html'))
   win.webContents.on('did-finish-load', () => win.webContents.send('config:update', cfg))
 

@@ -6,6 +6,7 @@ export const DEFAULTS = {
   edge: 'top',
   autoHide: false,
   scanline: false,
+  clickThrough: true,
   launchAtLogin: false,
   pollFastMs: 2000,
   pollSlowMs: 8000,
