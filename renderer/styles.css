@@ -13,7 +13,7 @@ html,body { background:transparent; overflow:hidden; font-family:'Cascadia Code'
 .dots, .clock { padding:0 10px; font-size:12px; }
 .clock { color:#64748b; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
-.seg.alert { color:#ef4444 !important; text-shadow:0 0 10px #ef4444 !important; animation:pulse 1s infinite; }
+.alert { color:#ef4444 !important; text-shadow:0 0 10px #ef4444 !important; animation:pulse 1s infinite; }
 .panel { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; padding:12px;
   background:rgba(7,4,16,0.94); border-bottom:1px solid var(--border,#7c3aed); }
 .tile { background:rgba(10,7,28,0.8); border:1px solid #333; border-radius:8px; padding:11px; font-size:11px; }
