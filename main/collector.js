@@ -31,7 +31,20 @@ export function mergeSnapshot(results, ts) {
 const FAST = { cpu: readCpu, memory: readMemory, gpu: readGpu, disk: readDisk, network: readNetwork, sensors: readSensors }
 const SLOW = { stack: readStack }
 
-export function createCollector({ cfg, onSnapshot, now = () => Date.now() }) {
+function filterGroup(group, modules) {
+  const out = {}
+  for (const [k, fn] of Object.entries(group)) {
+    if (modules && modules[k] === false) continue
+    out[k] = fn
+  }
+  return out
+}
+
+export function createCollector({ cfg, onSnapshot, now = () => Date.now(), groups }) {
+  const FAST_G = groups?.fast ?? FAST
+  const SLOW_G = groups?.slow ?? SLOW
+  const fast = filterGroup(FAST_G, cfg.modules)
+  const slow = filterGroup(SLOW_G, cfg.modules)
   let last = {}
   async function runGroup(group, timeoutMs) {
     const entries = await Promise.all(
@@ -40,9 +53,10 @@ export function createCollector({ cfg, onSnapshot, now = () => Date.now() }) {
     for (const [k, r] of entries) last[k] = r
     onSnapshot(mergeSnapshot(last, now()))
   }
-  const fastTimer = setInterval(() => runGroup(FAST, Math.max(1500, cfg.pollFastMs - 200)), cfg.pollFastMs)
-  const slowTimer = setInterval(() => runGroup(SLOW, cfg.pollSlowMs - 500), cfg.pollSlowMs)
+  const fastTimer = setInterval(() => { runGroup(fast, Math.max(1500, cfg.pollFastMs - 200)).catch(() => {}) }, cfg.pollFastMs)
+  const slowTimer = setInterval(() => { runGroup(slow, cfg.pollSlowMs - 500).catch(() => {}) }, cfg.pollSlowMs)
   // prime immediately
-  runGroup(FAST, cfg.pollFastMs); runGroup(SLOW, cfg.pollSlowMs)
+  runGroup(fast, cfg.pollFastMs).catch(() => {})
+  runGroup(slow, cfg.pollSlowMs).catch(() => {})
   return { stop() { clearInterval(fastTimer); clearInterval(slowTimer) } }
 }

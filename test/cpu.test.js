@@ -5,8 +5,8 @@ const fakeSi = {
   currentLoad: vi.fn(async () => ({ currentLoad: 27.6, cpus: [{load:40},{load:12}] })),
   cpuCurrentSpeed: vi.fn(async () => ({ avg: 3.9 })),
   processes: vi.fn(async () => ({ list: [
-    { name:'node', cpu: 11.2 }, { name:'blender', cpu: 6.1 },
-    { name:'chrome', cpu: 4.0 }, { name:'idle', cpu: 0 }
+    { name:'chrome', cpu: 4.0 }, { name:'node', cpu: 11.2 },
+    { name:'idle', cpu: 0 }, { name:'blender', cpu: 6.1 }
   ] }))
 }
 

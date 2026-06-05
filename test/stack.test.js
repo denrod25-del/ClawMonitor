@@ -25,4 +25,15 @@ describe('readStack', () => {
     expect(out.wsl).toEqual({ up:false, vmmemGB:null })
     expect(out.openclaw).toBe(false)
   })
+  it('sums vmmem across multiple matching tasklist rows', async () => {
+    const deps = {
+      httpOk: vi.fn(async () => true),
+      execOk: vi.fn(async () => true),
+      execOut: vi.fn(async () =>
+        '"vmmem.exe","100","Console","1","3,145,728 K"\n"vmmemWSL.exe","200","Console","1","3,145,728 K"\n')
+    }
+    const out = await readStack(deps)
+    expect(out.wsl.vmmemGB).toBe(6.0)   // 2 x 3,145,728 KB = 6 GB
+    expect(out.wsl.up).toBe(true)
+  })
 })
