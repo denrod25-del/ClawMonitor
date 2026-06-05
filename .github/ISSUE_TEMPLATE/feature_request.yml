@@ -1,0 +1,28 @@
+name: Feature request / idea
+description: Suggest a metric, palette, or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem or need?
+      description: What would you like ClawMonitor to do that it doesn't?
+      placeholder: I'd love to see GPU fan RPM on the bar / a bottom-edge option / ...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution (optional)
+      description: How you imagine it working.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - "New metric / collector"
+        - "Visual / palette / styling"
+        - "Behavior (click-through, hover, reserved space)"
+        - "Config option"
+        - "Packaging / install"
+        - "Other"

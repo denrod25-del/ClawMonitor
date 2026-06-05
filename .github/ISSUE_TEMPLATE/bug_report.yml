@@ -1,0 +1,55 @@
+name: Bug report
+description: Something isn't working right
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected instead.
+      placeholder: The CPU temp shows "—" even though LibreHardwareMonitor is running...
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Launch ClawMonitor
+        2. Hover the bar
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: ClawMonitor version
+      placeholder: v0.1.1
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 23H2 (or "winver" output)
+    validations:
+      required: true
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU
+      placeholder: NVIDIA RTX 3070 / AMD / Intel / none
+  - type: dropdown
+    id: lhm
+    attributes:
+      label: Is LibreHardwareMonitor running (for CPU temp issues)?
+      options:
+        - "Not relevant"
+        - "Yes, with web server on"
+        - "Yes, web server off"
+        - "No"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Any console output, error text, or a screenshot of the bar/panel.

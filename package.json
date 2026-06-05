@@ -1,6 +1,6 @@
 {
   "name": "clawmonitor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Always-on-top neon system monitor bar for Windows",
   "main": "main/index.js",
   "type": "module",
