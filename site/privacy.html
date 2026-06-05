@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — ClawMonitor</title>
+<meta name="description" content="ClawMonitor's privacy policy. The app collects nothing and sends no data off your device." />
+<meta name="robots" content="index, follow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#07040f; --line:#1c1730; --text:#e9e7f2; --muted:#9aa0b4; --faint:#5b6377;
+    --cpu:#22d3ee; --gpu:#f472b6; --net:#a78bfa; --accent:#7c3aed; --glow:rgba(124,58,237,.55); --cta:#34d399;
+    --maxw:780px;
+  }
+  *{box-sizing:border-box;margin:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{color:var(--cpu);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .mono{font-family:'JetBrains Mono',monospace}
+
+  nav{position:sticky;top:14px;z-index:50}
+  .navbar{max-width:1120px;margin:14px auto 0;display:flex;align-items:center;gap:18px;
+    padding:10px 16px;background:rgba(8,6,18,.7);backdrop-filter:blur(12px);border:1px solid var(--line);border-radius:14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gpu);box-shadow:0 0 10px var(--gpu)}
+  .nav-links{margin-left:auto;display:flex;gap:22px;font-size:14px}
+  .nav-links a{color:var(--muted)} .nav-links a:hover{color:var(--text);text-decoration:none}
+
+  header.head{position:relative;padding:80px 0 30px;text-align:center}
+  header.head::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 70% at 50% -10%,rgba(124,58,237,.20),transparent 70%);pointer-events:none}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gpu)}
+  h1{font-size:clamp(34px,5vw,46px);letter-spacing:-.02em;margin:14px 0 8px}
+  .updated{color:var(--faint);font-size:14px;font-family:'JetBrains Mono',monospace}
+
+  main{padding:30px 0 80px}
+  .tldr{border:1px solid var(--line);background:rgba(124,58,237,.08);border-radius:14px;padding:20px 22px;margin-bottom:38px}
+  .tldr b{color:var(--text)}
+  h2{font-size:22px;letter-spacing:-.01em;margin:34px 0 12px}
+  p{color:var(--muted);margin:10px 0}
+  ul{color:var(--muted);margin:10px 0 10px 4px;padding-left:22px}
+  li{margin:7px 0}
+  strong{color:var(--text)}
+  .card{border:1px solid var(--line);border-radius:14px;padding:18px 22px;margin:14px 0;background:rgba(13,10,24,.5)}
+
+  footer{border-top:1px solid var(--line);padding:30px 0;color:var(--faint);font-size:14px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px}
+  .foot a{color:var(--muted)} .foot a:hover{color:var(--text)}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="navbar">
+    <a class="brand" href="index.html"><span class="dot"></span> ClawMonitor</a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor">GitHub</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor/releases/latest">Download</a>
+    </div>
+  </div>
+</nav>
+
+<header class="head">
+  <div class="wrap">
+    <div class="eyebrow">Legal</div>
+    <h1>Privacy Policy</h1>
+    <div class="updated">Last updated: June 5, 2026</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="tldr">
+      <b>The short version:</b> the ClawMonitor app collects <b>nothing</b> and sends <b>no data off your device</b> — no telemetry, no analytics, no accounts. This website has no cookies, no analytics, and no tracking. That's really it.
+    </div>
+
+    <h2>1. The ClawMonitor application</h2>
+    <p>ClawMonitor is a desktop app that runs entirely on your own computer.</p>
+    <div class="card">
+      <ul>
+        <li>All system information it reads — CPU, RAM, GPU, disk, network, running processes, and temperatures — is processed <strong>locally</strong> and shown on your screen. It is never transmitted anywhere.</li>
+        <li><strong>No telemetry, no analytics, no accounts, no ads.</strong> The app does not "phone home."</li>
+        <li>Its only network activity is to <strong>local addresses on your own machine</strong> (for example, checking whether services such as Docker, WSL, Ollama, or LibreHardwareMonitor are running on <span class="mono">localhost</span>). These requests never leave your computer.</li>
+        <li>Your preferences are stored in a local <span class="mono">config.json</span> file on your machine. We never see them.</li>
+        <li>The full source code is public, so you can verify every claim on this page.</li>
+      </ul>
+    </div>
+
+    <h2>2. This website</h2>
+    <p>This site (<span class="mono">denrod25-del.github.io/ClawMonitor</span>) is a single static page. It sets <strong>no cookies</strong>, runs <strong>no analytics</strong>, has <strong>no tracking</strong>, and contains <strong>no forms</strong> — we do not collect or store any information about you. A few unavoidable, standard third parties are involved simply in delivering the page:</p>
+    <div class="card">
+      <ul>
+        <li><strong>Hosting (GitHub Pages):</strong> the site is hosted by GitHub, which may record standard technical information such as your IP address and browser type in server logs as part of serving any web page. See <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub's Privacy Statement</a>.</li>
+        <li><strong>Fonts (Google Fonts):</strong> the page loads its fonts from Google Fonts, so your browser requests them from Google's servers, which may log that request. See <a href="https://policies.google.com/privacy">Google's Privacy Policy</a>.</li>
+        <li><strong>Downloads &amp; links:</strong> the download button and source links point to GitHub. Once you follow them, <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement">GitHub's Privacy Statement</a> applies.</li>
+      </ul>
+    </div>
+
+    <h2>3. What we never do</h2>
+    <ul>
+      <li>We do not sell, rent, or share your data — because we don't collect any.</li>
+      <li>No advertising networks. No third-party trackers or pixels.</li>
+      <li>No user accounts, profiles, or email lists.</li>
+    </ul>
+
+    <h2>4. Children's privacy</h2>
+    <p>ClawMonitor is a general-purpose developer tool and is not directed at children. It collects no personal information from anyone, including children.</p>
+
+    <h2>5. Changes to this policy</h2>
+    <p>If this policy ever changes, the updated version will be posted on this page with a new "last updated" date. Since the project is open source, the full history is also visible in the Git commit log.</p>
+
+    <h2>6. Contact</h2>
+    <p>Questions? Open an issue on the <a href="https://github.com/denrod25-del/ClawMonitor/issues">GitHub repository</a>.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <span>ClawMonitor — MIT licensed. Not affiliated with Microsoft or NVIDIA.</span>
+    <span style="display:flex;gap:18px">
+      <a href="index.html">Home</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor">GitHub</a>
+    </span>
+  </div>
+</footer>
+</body>
+</html>
