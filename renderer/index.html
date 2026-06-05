@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="bar"></div>
+  <div id="panelHost"></div>
+  <script type="module">
+    import { createStore } from './store.js'
+    import { palette } from './palette.js'
+    import { renderStrip } from './strip.js'
+    import { renderPanel } from './panel.js'
+    import { computeAlerts } from '../main/alerts.js'
+
+    const store = createStore()
+    let cfg = { palette:'classic-synthwave', thresholds:{ cpuPct:90,gpuPct:90,tempC:80,diskFreeGB:10,ramPct:90 } }
+    let pinned = false
+
+    const bar = document.getElementById('bar')
+    const host = document.getElementById('panelHost')
+
+    function paint() {
+      const snap = store.get()
+      const pal = palette(cfg.palette)
+      const alerts = computeAlerts(snap, cfg.thresholds)
+      document.body.style.setProperty('--border', pal.border)
+      document.body.style.setProperty('--glow', pal.glow)
+      bar.innerHTML = renderStrip(snap, pal, alerts)
+      if (host.dataset.open === '1') host.innerHTML = renderPanel(snap, pal)
+    }
+
+    function openPanel(open) {
+      host.dataset.open = open ? '1' : '0'
+      host.innerHTML = open ? renderPanel(store.get(), palette(cfg.palette)) : ''
+      window.clawmonitor.setPanel(open)
+    }
+
+    bar.addEventListener('mouseenter', () => { if (!pinned) openPanel(true) })
+    host.addEventListener('mouseleave', () => { if (!pinned) openPanel(false) })
+    bar.addEventListener('click', () => { pinned = !pinned; openPanel(pinned) })
+
+    store.subscribe(paint)
+    window.clawmonitor.onMetrics(snap => store.set(snap))
+    window.clawmonitor.onConfig(c => { cfg = c; paint() })
+    paint()
+  </script>
+</body>
+</html>
