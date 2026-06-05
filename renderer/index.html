@@ -18,11 +18,9 @@
 
     const store = createStore()
     let cfg = { palette:'classic-synthwave', thresholds:{ cpuPct:90,gpuPct:90,tempC:80,diskFreeGB:10,ramPct:90 } }
-    let pinned = false
 
     const bar = document.getElementById('bar')
     const host = document.getElementById('panelHost')
-    const wrap = document.getElementById('wrap')
 
     function paint() {
       const snap = store.get()
@@ -37,15 +35,11 @@
     function openPanel(open) {
       host.dataset.open = open ? '1' : '0'
       host.innerHTML = open ? renderPanel(store.get(), palette(cfg.palette)) : ''
-      window.clawmonitor.setPanel(open)
     }
 
-    // Open on entering the bar; close only when the cursor leaves the whole
-    // widget (bar + panel). This avoids the panel sticking open when the mouse
-    // slides off the bar without ever entering the panel.
-    bar.addEventListener('mouseenter', () => { if (!pinned) openPanel(true) })
-    wrap.addEventListener('mouseleave', () => { if (!pinned) openPanel(false) })
-    bar.addEventListener('click', () => { pinned = !pinned; openPanel(pinned) })
+    // The window is click-through, so the main process detects hover (by polling
+    // the cursor) and tells us when to show/hide the detail panel.
+    window.clawmonitor.onPanel(open => openPanel(open))
 
     store.subscribe(paint)
     window.clawmonitor.onMetrics(snap => store.set(snap))

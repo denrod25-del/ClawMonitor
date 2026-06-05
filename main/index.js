@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const BAR_H = 34, PANEL_H = 190
 const CFG_PATH = join(app.getPath('userData'), 'config.json')
 
-let win, cfg, collector
+let win, cfg, collector, hoverTimer
 
 function build() {
   cfg = loadConfig(CFG_PATH)
@@ -22,26 +22,35 @@ function build() {
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true }
   })
   win.setAlwaysOnTop(true, 'screen-saver')
-  // Click-through: clicks pass to the app underneath the bar; forwarded mouse
-  // moves still let the renderer detect hover (so the detail panel opens).
-  if (cfg.clickThrough !== false) win.setIgnoreMouseEvents(true, { forward: true })
+  // Always click-through so clicks reach the apps underneath everywhere on the
+  // bar. Because a click-through window gets no DOM hover events, we drive the
+  // detail panel from the main process by polling the global cursor position.
+  win.setIgnoreMouseEvents(true)
   win.loadFile(join(__dirname, '..', 'renderer', 'index.html'))
   win.webContents.on('did-finish-load', () => win.webContents.send('config:update', cfg))
 
-  ipcMain.on('panel:set', (_e, open) => {
+  let panelOpen = false
+  hoverTimer = setInterval(() => {
     if (!win || win.isDestroyed()) return
-    const { width } = screen.getPrimaryDisplay().workAreaSize
-    win.setBounds({ x:0, y:0, width, height: open ? BAR_H + PANEL_H : BAR_H })
-  })
+    const w = screen.getPrimaryDisplay().workAreaSize.width
+    const pt = screen.getCursorScreenPoint()
+    const regionH = panelOpen ? BAR_H + PANEL_H : BAR_H
+    const over = pt.x >= 0 && pt.x < w && pt.y >= 0 && pt.y < regionH
+    if (over !== panelOpen) {
+      panelOpen = over
+      win.setBounds({ x: 0, y: 0, width: w, height: over ? BAR_H + PANEL_H : BAR_H })
+      win.webContents.send('panel:open', over)
+    }
+  }, 120)
 
   collector = createCollector({ cfg, onSnapshot: (snap) => {
     if (win && !win.isDestroyed()) win.webContents.send('metrics:update', snap)
   }})
-  app.on('before-quit', () => collector?.stop())
+  app.on('before-quit', () => { clearInterval(hoverTimer); collector?.stop() })
 }
 
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.whenReady().then(build)
-  app.on('window-all-closed', () => { collector?.stop(); app.quit() })
+  app.on('window-all-closed', () => { clearInterval(hoverTimer); collector?.stop(); app.quit() })
 }
