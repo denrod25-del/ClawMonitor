@@ -45,18 +45,34 @@ export function createCollector({ cfg, onSnapshot, now = () => Date.now(), group
   const SLOW_G = groups?.slow ?? SLOW
   const fast = filterGroup(FAST_G, cfg.modules)
   const slow = filterGroup(SLOW_G, cfg.modules)
+  // Per-collector timeout is a safety net, deliberately larger than the poll
+  // interval: some Windows reads (e.g. si.processes()) take a few seconds, and
+  // we'd rather refresh a touch slower than blank the slice to null (flicker).
+  const fastTimeout = cfg.fastTimeoutMs ?? 8000
+  const slowTimeout = cfg.slowTimeoutMs ?? 7000
   let last = {}
-  async function runGroup(group, timeoutMs) {
-    const entries = await Promise.all(
-      Object.entries(group).map(async ([k, fn]) => [k, await withTimeout(fn(), timeoutMs, k)])
-    )
-    for (const [k, r] of entries) last[k] = r
-    onSnapshot(mergeSnapshot(last, now()))
+  const running = { fast: false, slow: false }
+  function makeRunner(name, group, timeoutMs) {
+    return async () => {
+      if (running[name]) return            // re-entrancy guard: skip if prior run still in flight
+      running[name] = true
+      try {
+        const entries = await Promise.all(
+          Object.entries(group).map(async ([k, fn]) => [k, await withTimeout(fn(), timeoutMs, k)])
+        )
+        for (const [k, r] of entries) last[k] = r
+        onSnapshot(mergeSnapshot(last, now()))
+      } finally {
+        running[name] = false
+      }
+    }
   }
-  const fastTimer = setInterval(() => { runGroup(fast, Math.max(1500, cfg.pollFastMs - 200)).catch(() => {}) }, cfg.pollFastMs)
-  const slowTimer = setInterval(() => { runGroup(slow, cfg.pollSlowMs - 500).catch(() => {}) }, cfg.pollSlowMs)
+  const runFast = makeRunner('fast', fast, fastTimeout)
+  const runSlow = makeRunner('slow', slow, slowTimeout)
+  const fastTimer = setInterval(() => { runFast().catch(() => {}) }, cfg.pollFastMs)
+  const slowTimer = setInterval(() => { runSlow().catch(() => {}) }, cfg.pollSlowMs)
   // prime immediately
-  runGroup(fast, cfg.pollFastMs).catch(() => {})
-  runGroup(slow, cfg.pollSlowMs).catch(() => {})
+  runFast().catch(() => {})
+  runSlow().catch(() => {})
   return { stop() { clearInterval(fastTimer); clearInterval(slowTimer) } }
 }
