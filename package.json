@@ -21,6 +21,9 @@
       "renderer/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "**/node_modules/koffi/**"
+    ],
     "win": {
       "target": "nsis"
     },
