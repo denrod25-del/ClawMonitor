@@ -7,6 +7,7 @@ export const DEFAULTS = {
   autoHide: false,
   scanline: false,
   clickThrough: true,
+  reserveSpace: true,
   launchAtLogin: false,
   pollFastMs: 2000,
   pollSlowMs: 8000,

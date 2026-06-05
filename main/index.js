@@ -4,12 +4,21 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { loadConfig } from './config.js'
 import { createCollector } from './collector.js'
+import { registerAppBar, removeAppBar, removeStale, saveHwnd, clearHwndFile, hwndFromBuffer } from './appbar.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const BAR_H = 34, PANEL_H = 190
 const CFG_PATH = join(app.getPath('userData'), 'config.json')
+const APPBAR_STATE = join(app.getPath('userData'), 'appbar.hwnd')
 
-let win, cfg, collector, hoverTimer
+let win, cfg, collector, hoverTimer, appBarHwnd
+
+function cleanup() {
+  clearInterval(hoverTimer)
+  collector?.stop()
+  if (appBarHwnd != null) { removeAppBar(appBarHwnd); appBarHwnd = null }
+  clearHwndFile(APPBAR_STATE)
+}
 
 function build() {
   cfg = loadConfig(CFG_PATH)
@@ -29,6 +38,22 @@ function build() {
   win.loadFile(join(__dirname, '..', 'renderer', 'index.html'))
   win.webContents.on('did-finish-load', () => win.webContents.send('config:update', cfg))
 
+  // Reserve screen space (Windows AppBar) so maximized apps start below the bar
+  // instead of being covered. Uses physical pixels.
+  if (cfg.reserveSpace !== false) {
+    removeStale(APPBAR_STATE)   // drop any reservation left by a prior crash/kill
+    const d = screen.getPrimaryDisplay()
+    const s = d.scaleFactor || 1
+    appBarHwnd = hwndFromBuffer(win.getNativeWindowHandle())
+    registerAppBar(appBarHwnd, {
+      left: Math.round(d.bounds.x * s),
+      top: Math.round(d.bounds.y * s),
+      right: Math.round((d.bounds.x + d.bounds.width) * s),
+      bottom: Math.round((d.bounds.y + BAR_H) * s)
+    })
+    saveHwnd(APPBAR_STATE, appBarHwnd)
+  }
+
   let panelOpen = false
   hoverTimer = setInterval(() => {
     if (!win || win.isDestroyed()) return
@@ -46,11 +71,11 @@ function build() {
   collector = createCollector({ cfg, onSnapshot: (snap) => {
     if (win && !win.isDestroyed()) win.webContents.send('metrics:update', snap)
   }})
-  app.on('before-quit', () => { clearInterval(hoverTimer); collector?.stop() })
+  app.on('before-quit', cleanup)
 }
 
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.whenReady().then(build)
-  app.on('window-all-closed', () => { clearInterval(hoverTimer); collector?.stop(); app.quit() })
+  app.on('window-all-closed', () => { cleanup(); app.quit() })
 }

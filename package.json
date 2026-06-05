@@ -13,13 +13,17 @@
   "build": {
     "appId": "com.skyea.clawmonitor",
     "productName": "ClawMonitor",
-    "directories": { "output": "dist" },
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "main/**/*",
       "renderer/**/*",
       "package.json"
     ],
-    "win": { "target": "nsis" },
+    "win": {
+      "target": "nsis"
+    },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
@@ -29,6 +33,7 @@
     }
   },
   "dependencies": {
+    "koffi": "^3.0.2",
     "systeminformation": "^5.22.0"
   },
   "devDependencies": {
