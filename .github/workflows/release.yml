@@ -1,0 +1,53 @@
+name: Release
+
+# Builds the Windows installer and publishes a GitHub Release whenever you push
+# a version tag, e.g.:  git tag v0.1.2 && git push origin v0.1.2
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # needed to create the Release
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build installer
+        run: npm run dist
+
+      # ── Code signing via SignPath (enable once your SignPath Foundation
+      # ── project is approved). Uncomment and fill in the *-slug / org id, and
+      # ── add SIGNPATH_API_TOKEN to the repo's Actions secrets.
+      #
+      # - name: Sign installer with SignPath
+      #   id: sign
+      #   uses: signpath/github-action-submit-signing-request@v1
+      #   with:
+      #     api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+      #     organization-id: 'YOUR_ORG_ID'
+      #     project-slug: 'ClawMonitor'
+      #     signing-policy-slug: 'release-signing'
+      #     artifact-configuration-slug: 'installer'
+      #     github-artifact-id: ''            # or use a local path:
+      #     wait-for-completion: true
+      #     output-artifact-directory: 'dist-signed'
+      #   # then publish dist-signed/*.exe below instead of dist/*.exe
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          generate_release_notes: true
