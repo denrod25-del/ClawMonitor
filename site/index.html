@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ClawMonitor — a neon system monitor for Windows</title>
+<meta name="description" content="ClawMonitor is a free, open-source always-on-top neon system-monitor bar for Windows. Click-through, reserves screen space, CPU temps, and live Docker/WSL/Ollama status." />
+<meta property="og:title" content="ClawMonitor — a neon system monitor for Windows" />
+<meta property="og:description" content="Free, open-source. Click-through, reserves screen space, CPU temps, and live dev-stack status." />
+<meta property="og:type" content="website" />
+<!--
+  Design synthesis — inspiration pulled from 5 sources:
+  1. Linear (linear.app)      — gradient glow backgrounds, refined dark surfaces, section rhythm
+  2. Vercel (vercel.com)      — geometric grid lines, high-contrast type, generous whitespace
+  3. Raycast (raycast.com)    — colorful accent glows + hover-reveal feature cards
+  4. Warp (warp.dev)          — a live, interactive product demo as the hero (not a static image)
+  5. Synthwave '84 aesthetic  — neon grid, glow text, retro-futurism (matches the app's own look)
+  Type: JetBrains Mono + Inter. Style: dark base + neon accents.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#07040f; --bg2:#0c0a18; --surface:rgba(13,10,24,.7); --line:#1c1730;
+    --text:#e9e7f2; --muted:#9aa0b4; --faint:#5b6377;
+    --cpu:#22d3ee; --ram:#34d399; --gpu:#f472b6; --net:#a78bfa; --disk:#fb923c; --warn:#fbbf24;
+    --accent:#7c3aed; --glow:rgba(124,58,237,.55); --cta:#34d399; --up:#34d399; --down:#475569;
+    --maxw:1120px;
+  }
+  /* palettes for the interactive demo */
+  .demo[data-pal="tron"]{ --cpu:#22d3ee;--ram:#67e8f9;--gpu:#38bdf8;--net:#7dd3fc;--disk:#0ea5e9;--accent:#0ea5e9;--glow:rgba(14,165,233,.5);--up:#22d3ee }
+  .demo[data-pal="toxic"]{ --cpu:#a3e635;--ram:#34d399;--gpu:#22d3ee;--net:#84cc16;--disk:#eab308;--accent:#65a30d;--glow:rgba(101,163,13,.5);--up:#a3e635 }
+
+  *{box-sizing:border-box;margin:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:Inter,system-ui,sans-serif; line-height:1.6;
+    -webkit-font-smoothing:antialiased; overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  .mono{font-family:'JetBrains Mono',monospace}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--gpu)}
+  h1,h2,h3{line-height:1.1;letter-spacing:-.02em;font-weight:700}
+  h2{font-size:clamp(28px,4vw,40px);margin-bottom:14px}
+  .sub{color:var(--muted);font-size:18px;max-width:60ch}
+  section{position:relative;padding:96px 0}
+  .glow-bg::before{content:"";position:absolute;inset:0;background:
+     radial-gradient(60% 50% at 50% -10%, rgba(124,58,237,.22), transparent 70%);
+     pointer-events:none}
+
+  /* ---------- nav ---------- */
+  nav{position:fixed;top:14px;left:0;right:0;z-index:50}
+  .navbar{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:18px;
+    padding:10px 16px;background:rgba(8,6,18,.7);backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:-.01em}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gpu);box-shadow:0 0 10px var(--gpu)}
+  .nav-links{display:flex;gap:22px;margin-left:auto;align-items:center}
+  .nav-links a{color:var(--muted);font-size:14px;transition:color .2s}
+  .nav-links a:hover{color:var(--text)}
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:600;font-size:14px;
+    padding:10px 16px;border-radius:10px;cursor:pointer;border:1px solid transparent;
+    transition:transform .15s,box-shadow .2s,background .2s,border-color .2s}
+  .btn:focus-visible{outline:2px solid var(--cpu);outline-offset:2px}
+  .btn-primary{background:linear-gradient(180deg,#3ddc97,#22c07e);color:#04130c;
+    box-shadow:0 6px 24px rgba(52,211,153,.28)}
+  .btn-primary:hover{box-shadow:0 8px 30px rgba(52,211,153,.45)}
+  .btn-ghost{background:rgba(255,255,255,.04);border-color:var(--line);color:var(--text)}
+  .btn-ghost:hover{border-color:var(--accent);background:rgba(124,58,237,.12)}
+  @media(max-width:760px){ .nav-links a:not(.btn){display:none} }
+
+  /* ---------- hero ---------- */
+  .hero{padding-top:150px;text-align:center}
+  .hero-grid{position:absolute;inset:0;overflow:hidden;pointer-events:none;mask-image:linear-gradient(180deg,#000 0%,transparent 75%)}
+  .hero-grid::after{content:"";position:absolute;inset:-2px;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:46px 46px;opacity:.5}
+  .hero h1{font-size:clamp(40px,7vw,76px);margin:18px auto 0;max-width:14ch}
+  .hero h1 .grad{background:linear-gradient(90deg,var(--cpu),var(--gpu),var(--net));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero .sub{margin:20px auto 0;text-align:center}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:30px}
+  .req{margin-top:14px;font-size:13px;color:var(--faint)}
+
+  /* ---------- interactive demo bar ---------- */
+  .demo-stage{margin:54px auto 0;max-width:1000px;position:relative}
+  .demo-os{border:1px solid var(--line);border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,#0d1322,#0a0f1c);box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative}
+  .demo-os .wallpaper{position:absolute;inset:0;background:
+     radial-gradient(120% 90% at 50% 0%,rgba(124,58,237,.18),transparent 60%),
+     repeating-linear-gradient(115deg,#0c1120 0 22px,#0a0e1a 22px 44px)}
+  .demo{position:relative}
+  /* the bar */
+  .bar{display:flex;align-items:center;height:38px;font-family:'JetBrains Mono',monospace;font-size:13px;
+    background:rgba(10,7,28,.92);border-bottom:1px solid var(--accent);
+    box-shadow:0 0 22px var(--glow), inset 0 0 14px rgba(124,58,237,.12);position:relative;z-index:2}
+  .seg{padding:0 13px;white-space:nowrap}
+  .seg .lab{}
+  .seg b{color:#fff;font-weight:700}
+  #s_cpu .lab{color:var(--cpu);text-shadow:0 0 9px var(--cpu)}
+  #s_ram .lab{color:var(--ram);text-shadow:0 0 9px var(--ram)}
+  #s_gpu .lab{color:var(--gpu);text-shadow:0 0 9px var(--gpu)}
+  #s_net .lab{color:var(--net);text-shadow:0 0 9px var(--net)}
+  #s_disk .lab{color:var(--disk);text-shadow:0 0 9px var(--disk)}
+  .seg .t{color:var(--warn)}
+  .spacer{flex:1}
+  .dots{padding:0 12px;color:var(--muted);font-size:12px;display:flex;gap:10px}
+  .dots .d{color:var(--up);text-shadow:0 0 8px var(--up)}
+  .dots .off{color:var(--down);text-shadow:none}
+  .clock{padding-right:14px;color:var(--faint);font-size:12px}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  .seg.alert .lab,.seg.alert b{color:#ef4444!important;text-shadow:0 0 10px #ef4444!important;animation:pulse 1s infinite}
+
+  /* drop panel */
+  .panel{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px;
+    background:rgba(7,4,16,.96);border-bottom:1px solid var(--accent);
+    max-height:0;overflow:hidden;opacity:0;transition:max-height .28s ease,opacity .2s,padding .28s ease;
+    padding-top:0;padding-bottom:0}
+  .demo:hover .panel,.demo.open .panel{max-height:260px;opacity:1;padding:12px}
+  .tile{background:rgba(10,7,28,.85);border:1px solid #2a2440;border-radius:8px;padding:11px;font-family:'JetBrains Mono',monospace;font-size:11px}
+  .tile .th{font-size:11px;margin-bottom:8px}
+  .bars{display:flex;gap:2px;align-items:flex-end;height:28px;margin-bottom:9px}
+  .bars i{flex:1;display:block;background:var(--cpu);box-shadow:0 0 6px var(--cpu)}
+  .row{display:flex;justify-content:space-between;color:var(--muted);line-height:1.85;font-size:10px}
+  .row .v{color:#e2e8f0}
+  .hr{height:1px;margin:7px 0;opacity:.6}
+  .hint{margin-top:14px;font-size:13px;color:var(--faint);font-family:'JetBrains Mono',monospace}
+
+  /* demo controls */
+  .controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:12px;padding:8px 13px;border-radius:9px;cursor:pointer;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--muted);transition:.18s}
+  .chip:hover{color:var(--text);border-color:var(--accent)}
+  .chip[aria-pressed="true"]{color:var(--text);border-color:var(--accent);background:rgba(124,58,237,.16)}
+  .chip:focus-visible{outline:2px solid var(--cpu);outline-offset:2px}
+
+  /* ---------- features ---------- */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:46px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;
+    transition:transform .2s,border-color .2s,box-shadow .2s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 16px 40px rgba(124,58,237,.18)}
+  .card .ico{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;
+    background:rgba(124,58,237,.14);border:1px solid var(--line)}
+  .card .ico svg{width:22px;height:22px;stroke:var(--cpu)}
+  .card h3{font-size:18px;margin-bottom:8px}
+  .card p{color:var(--muted);font-size:15px}
+
+  /* ---------- about ---------- */
+  .about{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+  @media(max-width:860px){.about{grid-template-columns:1fr}}
+  .about p{color:var(--muted);margin-top:14px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .badge{font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 11px;border-radius:8px;
+    border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
+  .shot{border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .shot img{display:block;width:100%}
+
+  /* ---------- download ---------- */
+  .download{text-align:center}
+  .dl-card{max-width:720px;margin:0 auto;background:
+     radial-gradient(80% 120% at 50% 0%,rgba(52,211,153,.12),transparent 60%),var(--surface);
+    border:1px solid var(--line);border-radius:20px;padding:48px 28px}
+  .note{margin-top:18px;font-size:13px;color:var(--faint);max-width:48ch;margin-inline:auto}
+  .note code{font-family:'JetBrains Mono',monospace;color:var(--muted)}
+
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line);padding:34px 0;color:var(--faint);font-size:14px}
+  .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:14px;align-items:center}
+  .foot a{color:var(--muted)} .foot a:hover{color:var(--text)}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="navbar">
+    <a class="brand" href="#top"><span class="dot"></span> ClawMonitor</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
+      <a href="#about">About</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor" aria-label="GitHub repository">GitHub</a>
+      <a class="btn btn-primary" href="https://github.com/denrod25-del/ClawMonitor/releases/latest">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero glow-bg" id="top">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="eyebrow">Open-source · Windows · MIT</div>
+    <h1>Your whole system, <span class="grad">at a glance.</span></h1>
+    <p class="sub">A slim, always-on-top neon bar for Windows. CPU · RAM · GPU · temps · network — plus live health for your dev stack. <b>Click-through</b>, so it never gets in your way.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/denrod25-del/ClawMonitor/releases/latest">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download for Windows
+      </a>
+      <a class="btn btn-ghost" href="https://github.com/denrod25-del/ClawMonitor">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.4-3.9-1.4-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.5 18.3 4.8 18.3 4.8c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+    <p class="req">Windows 10 / 11 (x64) · ~free · no account</p>
+
+    <!-- INTERACTIVE LIVE DEMO -->
+    <div class="demo-stage" id="demo">
+      <div class="demo-os">
+        <div class="wallpaper" aria-hidden="true"></div>
+        <div class="demo" data-pal="classic" role="img" aria-label="Interactive recreation of the ClawMonitor bar. Hover to expand the detail panel.">
+          <div class="bar">
+            <span class="seg" id="s_cpu"><span class="lab">CPU</span> <b>—</b></span>
+            <span class="seg" id="s_ram"><span class="lab">RAM</span> <b>—</b></span>
+            <span class="seg" id="s_gpu"><span class="lab">GPU</span> <b>—</b> <span class="t">—°</span></span>
+            <span class="seg" id="s_net"><span class="lab">NET</span> <b>↓—</b></span>
+            <span class="seg" id="s_disk"><span class="lab">DISK</span> <b>—</b></span>
+            <span class="spacer"></span>
+            <span class="dots"><span class="d">●WSL</span><span class="d">●CLAW</span><span class="off">●DOCK</span></span>
+            <span class="clock" id="s_clock">--:--</span>
+          </div>
+          <div class="panel">
+            <div class="tile" style="border-color:#1e3a8a">
+              <div class="th" style="color:var(--cpu);text-shadow:0 0 8px var(--cpu)">CPU · <span id="p_cpu">—</span> · 4.05GHz · <span id="p_temp">—</span>°</div>
+              <div class="bars" id="p_bars"></div>
+              <div class="row"><span>node</span><span class="v">11%</span></div>
+              <div class="row"><span>blender</span><span class="v">6%</span></div>
+              <div class="row"><span>chrome</span><span class="v">4%</span></div>
+            </div>
+            <div class="tile" style="border-color:#831843">
+              <div class="th" style="color:var(--gpu);text-shadow:0 0 8px var(--gpu)">GPU · RTX 3070 · <span id="p_gpu">—</span></div>
+              <div class="row"><span>VRAM</span><span class="v">2.1 / 8.0 GB</span></div>
+              <div class="row"><span>Power</span><span class="v">38 W</span></div>
+              <div class="hr" style="background:#831843"></div>
+              <div class="th" style="color:var(--ram);text-shadow:0 0 8px var(--ram)">RAM · <span id="p_ram">—</span> · 19.6/47.9 GB</div>
+              <div class="row"><span>vmmem (WSL)</span><span class="v">7.9 GB</span></div>
+            </div>
+            <div class="tile" style="border-color:#6d28d9">
+              <div class="th" style="color:var(--net);text-shadow:0 0 8px var(--net)">YOUR STACK</div>
+              <div class="row"><span><span style="color:var(--up)">●</span> OpenClaw</span><span class="v">:18789</span></div>
+              <div class="row"><span><span style="color:var(--up)">●</span> WSL</span><span class="v">7.9 GB</span></div>
+              <div class="row"><span><span style="color:var(--down)">●</span> Docker</span><span class="v">stopped</span></div>
+              <div class="row"><span><span style="color:var(--up)">●</span> Ollama</span><span class="v">:11434</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="hint">↑ this is live — hover the bar to drop the panel</p>
+      <div class="controls" role="group" aria-label="Demo controls">
+        <button class="chip" data-pal="classic" aria-pressed="true">Classic synthwave</button>
+        <button class="chip" data-pal="tron" aria-pressed="false">Tron ice</button>
+        <button class="chip" data-pal="toxic" aria-pressed="false">Toxic</button>
+        <button class="chip" id="spikeBtn">⚡ Simulate CPU spike</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="eyebrow">Features</div>
+    <h2>Glanceable. Out of the way. Genuinely useful.</h2>
+    <p class="sub">Built like a real tool, not a skin — 35 tests, modular collectors, a proper Windows AppBar.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 6 6m0-6-6 6"/><circle cx="12" cy="12" r="10"/></svg></div>
+        <h3>Click-through</h3>
+        <p>Pins to the top of your screen but never steals clicks — your apps stay fully usable. Hover to reveal the detail panel.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg></div>
+        <h3>Reserves screen space</h3>
+        <p>Registers as a Windows AppBar like the taskbar, so maximized windows sit <em>below</em> the bar instead of being covered. Self-healing across restarts.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg></div>
+        <h3>Real temperatures</h3>
+        <p>GPU temp out of the box via nvidia-smi; CPU temp through LibreHardwareMonitor. Pulsing red alerts when something redlines.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0 0 18 0V5"/><path d="M3 12a9 3 0 0 0 18 0"/></svg></div>
+        <h3>Dev-stack health</h3>
+        <p>Live up/down dots for Docker, WSL (vmmem), Ollama, and any local service. The part developers actually keep glancing at.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="13" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="10" cy="18" r="2.5"/></svg></div>
+        <h3>Synthwave styling</h3>
+        <p>A neon look with selectable palettes — Classic synthwave, Tron ice, or Toxic green. Try the switcher in the demo above.</p>
+      </div>
+      <div class="card">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+        <h3>Open source</h3>
+        <p>MIT-licensed, Electron + a clean modular architecture. Read every line, file an issue, or add your own collector.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about" class="glow-bg">
+  <div class="wrap about">
+    <div>
+      <div class="eyebrow">About</div>
+      <h2>It started with a CPU at 90%.</h2>
+      <p>ClawMonitor began as a quick fix for the constant "what's pegging my machine?" question — and turned into a proper little tool. It shows the essentials at a glance, drops a detail panel on hover, and keeps an eye on the dev services you care about, all without ever blocking the apps underneath.</p>
+      <p>It's free, open-source, and built to be hackable: each metric is a small, independently tested collector, so adding a new one is a few lines.</p>
+      <div class="badges" aria-label="Built with">
+        <span class="badge">Electron</span>
+        <span class="badge">systeminformation</span>
+        <span class="badge">koffi / Win32 AppBar</span>
+        <span class="badge">Vitest · 35 tests</span>
+        <span class="badge">MIT</span>
+      </div>
+    </div>
+    <figure class="shot">
+      <img src="panel.png" alt="ClawMonitor's expanded hover panel showing CPU per-core load, GPU and RAM details, and dev-stack health." loading="lazy" />
+    </figure>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download">
+  <div class="wrap">
+    <div class="dl-card glow-bg">
+      <div class="eyebrow">Download</div>
+      <h2>Get ClawMonitor</h2>
+      <p class="sub" style="margin:0 auto 26px">Free, one-click installer. Auto-starts at login. Takes about 10 seconds.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://github.com/denrod25-del/ClawMonitor/releases/latest">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download latest release
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/denrod25-del/ClawMonitor#build-from-source">Build from source</a>
+      </div>
+      <p class="note">It's an unsigned indie build, so Windows SmartScreen may say <em>"Windows protected your PC"</em> — click <code>More info → Run anyway</code>. Code-signing is on the roadmap.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>ClawMonitor — MIT licensed. Not affiliated with Microsoft or NVIDIA.</span>
+    <span style="display:flex;gap:18px">
+      <a href="https://github.com/denrod25-del/ClawMonitor">GitHub</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor/releases/latest">Releases</a>
+      <a href="https://github.com/denrod25-del/ClawMonitor/issues">Issues</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var rnd=function(min,max){return Math.random()*(max-min)+min};
+  var clamp=function(v,a,b){return Math.max(a,Math.min(b,v))};
+  // state
+  var st={cpu:28,ram:41,gpu:9,temp:46,net:2.1,disk:14};
+  var spiking=false;
+  var el=function(id){return document.getElementById(id)};
+
+  // per-core bars
+  var barsHost=el('p_bars');
+  for(var i=0;i<16;i++){var b=document.createElement('i');b.style.height=(rnd(15,90))+'%';barsHost.appendChild(b)}
+  var bars=barsHost.querySelectorAll('i');
+
+  function setSeg(id,html){var s=el(id);if(s){s.querySelector('b').innerHTML=html}}
+  function paint(){
+    setSeg('s_cpu', Math.round(st.cpu)+'%');
+    setSeg('s_ram', Math.round(st.ram)+'%');
+    el('s_gpu').querySelector('b').innerHTML=Math.round(st.gpu)+'%';
+    el('s_gpu').querySelector('.t').textContent=Math.round(st.temp)+'°';
+    setSeg('s_net', '↓'+st.net.toFixed(1));
+    setSeg('s_disk', Math.round(st.disk)+'%');
+    el('p_cpu').textContent=Math.round(st.cpu)+'%';
+    el('p_gpu').textContent=Math.round(st.gpu)+'% · '+Math.round(st.temp)+'°';
+    el('p_ram').textContent=Math.round(st.ram)+'%';
+    el('p_temp').textContent=Math.round(st.temp);
+    var d=new Date();
+    el('s_clock').textContent=(d.getHours()%12||12)+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+  function tick(){
+    var target=spiking?96:28;
+    st.cpu=clamp(st.cpu+rnd(-6,6)+(spiking?12:0),spiking?88:6,99);
+    st.ram=clamp(st.ram+rnd(-2,2),38,52);
+    st.gpu=clamp(st.gpu+rnd(-5,7),3,70);
+    st.temp=clamp(46+(st.gpu*0.25)+(spiking?14:0)+rnd(-1,1),42,86);
+    st.net=clamp(st.net+rnd(-.8,.9),0,9);
+    for(var i=0;i<bars.length;i++){bars[i].style.height=clamp(parseFloat(bars[i].style.height)+rnd(-22,22),6,98)+'%'}
+    paint();
+  }
+  paint(); setInterval(tick,1200);
+
+  // palette switch
+  var demo=document.querySelector('.demo');
+  document.querySelectorAll('.chip[data-pal]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('.chip[data-pal]').forEach(function(b){b.setAttribute('aria-pressed','false')});
+      btn.setAttribute('aria-pressed','true');
+      demo.setAttribute('data-pal',btn.getAttribute('data-pal'));
+    });
+  });
+
+  // spike sim -> red alert
+  var spikeBtn=el('spikeBtn');
+  spikeBtn.addEventListener('click',function(){
+    spiking=true; el('s_cpu').classList.add('alert'); el('s_gpu').classList.add('alert');
+    demo.classList.add('open');
+    spikeBtn.disabled=true; spikeBtn.textContent='⚡ Spiking…';
+    setTimeout(function(){
+      spiking=false; el('s_cpu').classList.remove('alert'); el('s_gpu').classList.remove('alert');
+      demo.classList.remove('open'); spikeBtn.disabled=false; spikeBtn.textContent='⚡ Simulate CPU spike';
+    },3800);
+  });
+})();
+</script>
+</body>
+</html>
