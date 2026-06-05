@@ -5,8 +5,10 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div id="bar"></div>
-  <div id="panelHost"></div>
+  <div id="wrap">
+    <div id="bar"></div>
+    <div id="panelHost"></div>
+  </div>
   <script type="module">
     import { createStore } from './store.js'
     import { palette } from './palette.js'
@@ -20,6 +22,7 @@
 
     const bar = document.getElementById('bar')
     const host = document.getElementById('panelHost')
+    const wrap = document.getElementById('wrap')
 
     function paint() {
       const snap = store.get()
@@ -37,8 +40,11 @@
       window.clawmonitor.setPanel(open)
     }
 
+    // Open on entering the bar; close only when the cursor leaves the whole
+    // widget (bar + panel). This avoids the panel sticking open when the mouse
+    // slides off the bar without ever entering the panel.
     bar.addEventListener('mouseenter', () => { if (!pinned) openPanel(true) })
-    host.addEventListener('mouseleave', () => { if (!pinned) openPanel(false) })
+    wrap.addEventListener('mouseleave', () => { if (!pinned) openPanel(false) })
     bar.addEventListener('click', () => { pinned = !pinned; openPanel(pinned) })
 
     store.subscribe(paint)

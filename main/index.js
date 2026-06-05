@@ -9,7 +9,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const BAR_H = 34, PANEL_H = 190
 const CFG_PATH = join(app.getPath('userData'), 'config.json')
 
-let win, cfg
+let win, cfg, collector
 
 function build() {
   cfg = loadConfig(CFG_PATH)
@@ -26,18 +26,19 @@ function build() {
   win.webContents.on('did-finish-load', () => win.webContents.send('config:update', cfg))
 
   ipcMain.on('panel:set', (_e, open) => {
+    if (!win || win.isDestroyed()) return
     const { width } = screen.getPrimaryDisplay().workAreaSize
     win.setBounds({ x:0, y:0, width, height: open ? BAR_H + PANEL_H : BAR_H })
   })
 
-  const collector = createCollector({ cfg, onSnapshot: (snap) => {
+  collector = createCollector({ cfg, onSnapshot: (snap) => {
     if (win && !win.isDestroyed()) win.webContents.send('metrics:update', snap)
   }})
-  app.on('before-quit', () => collector.stop())
+  app.on('before-quit', () => collector?.stop())
 }
 
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.whenReady().then(build)
-  app.on('window-all-closed', () => app.quit())
+  app.on('window-all-closed', () => { collector?.stop(); app.quit() })
 }

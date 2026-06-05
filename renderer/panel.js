@@ -1,6 +1,12 @@
 // renderer/panel.js
 import { pct, gb, temp } from '../main/format.js'
 
+// Escape text that comes from the system (process names, mount labels, GPU
+// model) before interpolating into innerHTML.
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' }[c]))
+}
+
 function bars(perCore, color) {
   return `<div class="bars">${perCore.map(v =>
     `<i style="height:${Math.max(4, v)}%;background:${color};box-shadow:0 0 6px ${color}"></i>`).join('')}</div>`
@@ -16,11 +22,11 @@ export function renderPanel(snap, pal) {
     <div class="tile" style="border-color:#1e3a8a">
       <div class="th" style="color:${pal.cpu};text-shadow:0 0 8px ${pal.cpu}">CPU · ${pct(c.loadPct)} · ${c.clockGHz}GHz${cpuTemp}</div>
       ${bars(c.perCore, pal.cpu)}
-      ${rows(c.top.map(p => [p.name, `${p.cpuPct}%`]))}
+      ${rows(c.top.map(p => [esc(p.name), `${p.cpuPct}%`]))}
     </div>` : ''
   const gpuTile = `
     <div class="tile" style="border-color:#831843">
-      <div class="th" style="color:${pal.gpu};text-shadow:0 0 8px ${pal.gpu}">${g ? `GPU · ${g.model.replace(/NVIDIA GeForce /,'')} · ${pct(g.utilPct)} · ${temp(g.tempC)}` : 'GPU · n/a'}</div>
+      <div class="th" style="color:${pal.gpu};text-shadow:0 0 8px ${pal.gpu}">${g ? `GPU · ${esc((g.model || 'GPU').replace(/NVIDIA GeForce /,''))} · ${pct(g.utilPct)} · ${temp(g.tempC)}` : 'GPU · n/a'}</div>
       ${g ? rows([
         ['VRAM', `${g.vramUsedGB} / ${g.vramTotalGB} GB`],
         ['Power', g.powerW != null ? `${g.powerW} W` : 'n/a'],
@@ -41,7 +47,7 @@ export function renderPanel(snap, pal) {
         <div class="row">${dot(st.ollama)} Ollama <span class="v">:11434</span></div>` : '<div class="row">n/a</div>'}
       <div class="hr" style="background:#6d28d9"></div>
       <div class="th" style="color:${pal.disk};text-shadow:0 0 8px ${pal.disk}">DISK</div>
-      ${d ? d.drives.map(dr => `<div class="row"><span>${dr.mount}</span><span class="v">${dr.freeGB} GB free</span></div>`).join('') : ''}
+      ${d ? d.drives.map(dr => `<div class="row"><span>${esc(dr.mount)}</span><span class="v">${dr.freeGB} GB free</span></div>`).join('') : ''}
     </div>`
   return `<div class="panel">${cpuTile}${gpuTile}${stackTile}</div>`
 }
