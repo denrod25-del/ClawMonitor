@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Always-on-top neon system monitor bar for Windows",
   "main": "main/index.js",
+  "type": "module",
   "scripts": {
     "start": "electron .",
     "test": "vitest run",
