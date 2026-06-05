@@ -2,6 +2,8 @@
 
 A frameless, **always-on-top neon system monitor** for Windows — a slim synthwave bar pinned to the top of your screen with CPU / RAM / GPU / disk / network at a glance, and a hover-to-expand panel with per-core load, top processes, temperatures, and **your dev stack's health** (Docker, WSL, Ollama, and more).
 
+**[🌐 Website](https://denrod25-del.github.io/ClawMonitor/)** · **[⬇ Download](https://github.com/denrod25-del/ClawMonitor/releases/latest)** · **[⭐ Star](https://github.com/denrod25-del/ClawMonitor)**
+
 ![ClawMonitor demo — the bar and its hover panel](assets/demo.gif)
 
 It's **click-through** (your apps stay fully usable underneath) and **reserves screen space** like the taskbar, so maximized windows sit below it instead of being covered.
