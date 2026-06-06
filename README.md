@@ -34,6 +34,8 @@ It's **click-through** (your apps stay fully usable underneath) and **reserves s
 
 **Requirements:** Windows 10/11 (x64). NVIDIA GPU recommended for GPU stats (uses `nvidia-smi`).
 
+> **Platform support: Windows only.** macOS and Linux aren't supported yet, and iOS/Android aren't possible (mobile OSes sandbox away system-wide monitoring). The foundation (Electron + `systeminformation`) is cross-platform, so a **Linux port is realistic** — a couple of features (the screen-space AppBar, the WSL tile) need platform-specific work. See [`docs/PORTING.md`](docs/PORTING.md) if you'd like to help.
+
 ---
 
 ## CPU temperature (optional)
